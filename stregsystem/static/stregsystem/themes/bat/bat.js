@@ -110,6 +110,9 @@ function pointAndShoot() {
 	// On first load, we need to get the bat position from the HTML
 	bat.x ??= Number(bat.element.style.getPropertyValue("--bat-x"));
 	bat.y ??= Number(bat.element.style.getPropertyValue("--bat-y"));
+	bat.vx ??= Number(bat.element.style.getPropertyValue("--bat-vx"));
+	bat.vy ??= Number(bat.element.style.getPropertyValue("--bat-vy"));
+
 	/*
 	// Calculate new coordinates
 	const { coordinate: newX, direction } = newCoordinate(bat.x);
@@ -142,6 +145,36 @@ function pointAndShoot() {
 	bat.x = newX;
 	bat.y = newY;
 	*/
+
+	let tooClose = batQueue.filter(isClose(bat, batQueue, protectedRange))
+	let inRange = batQueue.filter(isClose(bat, batQueue, visualRange))
+	if (tooClose.length > 0){
+		let seperation = calculateSeperation(bat, tooClose)
+		bat.vx += seperation.vx * avoidFactor
+		bat.vy += seperation.vy * avoidFactor
+	}
+	if(inRange.length > 0){
+		let alignment = calculateAlignment(bat, inRange)
+		bat.vx += alignment.vx * alignFactor
+		bat.vy += alignment.vy * alignFactor
+		let cohesion = calculateCohesion(bat, inRange)
+		bat.vx += cohesion.vx * cohesionFactor
+		bat.vy += cohesion.vy * cohesionFactor
+	}
+
+	let edgeturn = calculateEdgeturn(bat)
+	bat.vx += edgeturn.vx
+	bat.vy += edgeturn.vy
+
+	let speed = Math.sqrt(bat.vx ** 2 + bat.vy ** 2)
+	if (speed > maxSpeed) {
+		bat.vx *= maxSpeed / speed
+		bat.vy *= maxSpeed / speed
+	}
+	else if (speed < minSpeed && speed != 0) {
+		bat.vx *= minSpeed / speed
+		bat.vy *= minSpeed / speed
+	}
 
 	// Put it back in the bats array.
 	// Bats must be ordered such that the first element is always the next one that needs to be shot.
@@ -198,6 +231,18 @@ function calculateCohesion(bat, others){
 	averagey = averagey/others.length
 	return {'vx': averagex, 'vy': averagey}
 }
+
+/**
+ *
+ * @param {bat} bat
+ */
+function calculateEdgeturn(bat){
+	if (bat.x < leftMargin) bat.vx += turnFactor
+	if (bat.x > rightMargin) bat.vx -= turnFactor
+	if (bat.y < topMargin) bat.vy += turnFactor
+	if (bat.y > bottomMargin) bat.vy -= turnFactor
+}
+
 
 /**
  * Generates a new coordinate that is at least 2% different from
