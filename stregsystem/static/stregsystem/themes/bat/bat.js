@@ -97,6 +97,15 @@ function prepareNextShot() {
 	}
 }
 /**
+ * Generates a list of bats that are close to the bat
+ * @param {bat} bat The bat we want to check from
+ * @param {bat} other another bat
+ * @param {number} distance The radius around the bat
+ */
+function isClose(bat, other, distance){
+	return (bat.x - other.x)**2 + (bat.y - other.y)**2 < distance**2
+}
+/**
  * Gives the next bat in the queue some new coordinates.
  * DO NOT call this directly, call `prepareNextShot` instead.
  */
@@ -113,41 +122,23 @@ function pointAndShoot() {
 	bat.vx ??= Number(bat.element.style.getPropertyValue("--bat-vx"));
 	bat.vy ??= Number(bat.element.style.getPropertyValue("--bat-vy"));
 
-	/*
-	// Calculate new coordinates
-	const { coordinate: newX, direction } = newCoordinate(bat.x);
-	const { coordinate: newY } = newCoordinate(bat.y);
-	// Calculate the animation time based on how far
-	// the new coordinates are from the previous
-	const distance = Math.sqrt((bat.x - newX) ** 2 + (bat.y - newY) ** 2);
-	const flyTime = speedMultiplier * distance;
+	const turnFactor = 0.2
+	const visualRange = 200
+	const protectedRange = 20
+	const avoidFactor = 0.05
+	const alignFactor = 0.05
+	const cohesionFactor = 0.0005
+	const maxSpeed = 1
+	const minSpeed = 0.3
+	const updateTime = 100
 
-	const now = Date.now();
-	// If we are late to the party, we pretend that the bat was supposed to fly right now
-	bat.nextFly = Math.max(bat.nextFly, now);
+	const leftMargin = 10
+	const rightMargin = 100 - leftMargin
+	const topMargin = 10
+	const bottomMargin = 100 - topMargin
 
-	// Set the animation in the DOM
-	const batDirection = direction * -1;
-	bat.element.animate(
-		[
-			{ "--bat-x": bat.x, "--bat-y": bat.y, "--bat-direction": batDirection },
-			{ "--bat-x": newX, "--bat-y": newY, "--bat-direction": batDirection },
-		],
-		{
-			delay: bat.nextFly - now,
-			duration: flyTime,
-			fill: "forwards",
-		},
-	);
-
-	// Set everything in our local bat object so we know what's up next time
-	bat.nextFly += flyTime;
-	bat.x = newX;
-	bat.y = newY;
-	*/
-
-	let tooClose = batQueue.filter(isClose(bat, batQueue, protectedRange))
-	let inRange = batQueue.filter(isClose(bat, batQueue, visualRange))
+	let tooClose = batQueue.filter(other=>isClose(bat, other, protectedRange)&&other!==bat)
+	let inRange = batQueue.filter(other=>isClose(bat, other, visualRange)&&other!==bat)
 	if (tooClose.length > 0){
 		let seperation = calculateSeperation(bat, tooClose)
 		bat.vx += seperation.vx * avoidFactor
@@ -162,19 +153,40 @@ function pointAndShoot() {
 		bat.vy += cohesion.vy * cohesionFactor
 	}
 
-	let edgeturn = calculateEdgeturn(bat)
-	bat.vx += edgeturn.vx
-	bat.vy += edgeturn.vy
+	if (bat.x < leftMargin) bat.vx += turnFactor
+	if (bat.x > rightMargin) bat.vx -= turnFactor
+	if (bat.y < topMargin) bat.vy += turnFactor
+	if (bat.y > bottomMargin) bat.vy -= turnFactor
 
 	let speed = Math.sqrt(bat.vx ** 2 + bat.vy ** 2)
 	if (speed > maxSpeed) {
 		bat.vx *= maxSpeed / speed
 		bat.vy *= maxSpeed / speed
 	}
-	else if (speed < minSpeed && speed != 0) {
+	else if (speed < minSpeed && speed !== 0) {
 		bat.vx *= minSpeed / speed
 		bat.vy *= minSpeed / speed
 	}
+	const flyTime = updateTime
+	const now = Date.now();
+	const batDirection =bat.vx >=0 ? 1 : -1
+	bat.nextFly = Math.max(bat.nextFly, now);
+	bat.element.animate(
+		[
+			{ "--bat-x": bat.x, "--bat-y": bat.y, "--bat-direction": batDirection },
+			{ "--bat-x": (bat.x + bat.vx), "--bat-y": (bat.x + bat.vy), "--bat-direction": batDirection },
+		],
+		{
+			delay: bat.nextFly - now,
+			duration: flyTime,
+			fill: "forwards",
+		},
+	);
+	bat.nextFly += updateTime;
+	bat.x += bat.vx;
+	bat.y += bat.vy;
+
+
 
 	// Put it back in the bats array.
 	// Bats must be ordered such that the first element is always the next one that needs to be shot.
@@ -190,15 +202,7 @@ function pointAndShoot() {
 	prepareNextShot();
 }
 
-/**
- * Generates a list of bats that are close to the bat
- * @param {bat} bat The bat we want to check from
- * @param {bat[]} others The array of other bats
- * @param {number} distance The radius around the bat
- */
-function isClose(bat, others, distance){
 
-}
 
 /**
  *
@@ -230,17 +234,6 @@ function calculateCohesion(bat, others){
 	averagex = averagex/others.length
 	averagey = averagey/others.length
 	return {'vx': averagex, 'vy': averagey}
-}
-
-/**
- *
- * @param {bat} bat
- */
-function calculateEdgeturn(bat){
-	if (bat.x < leftMargin) bat.vx += turnFactor
-	if (bat.x > rightMargin) bat.vx -= turnFactor
-	if (bat.y < topMargin) bat.vy += turnFactor
-	if (bat.y > bottomMargin) bat.vy -= turnFactor
 }
 
 
