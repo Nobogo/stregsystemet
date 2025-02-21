@@ -123,26 +123,26 @@ function pointAndShoot() {
 	bat.vy ??= Number(bat.element.style.getPropertyValue("--bat-vy"));
 
 	const turnFactor = 0.2
-	const visualRange = 200
-	const protectedRange = 20
+	const visualRange = 20
+	const protectedRange = 2
 	const avoidFactor = 0.05
 	const alignFactor = 0.05
 	const cohesionFactor = 0.0005
-	const maxSpeed = 1
-	const minSpeed = 0.3
-	const updateTime = 100
+	const maxSpeed = 2
+	const minSpeed = 1
+	const updateTime = 50
 
 	const leftMargin = 10
 	const rightMargin = 100 - leftMargin
 	const topMargin = 10
-	const bottomMargin = 100 - topMargin
+	const bottomMargin = 90 - topMargin
 
 	let tooClose = batQueue.filter(other=>isClose(bat, other, protectedRange)&&other!==bat)
 	let inRange = batQueue.filter(other=>isClose(bat, other, visualRange)&&other!==bat)
 	if (tooClose.length > 0){
 		let seperation = calculateSeperation(bat, tooClose)
-		bat.vx += seperation.vx * avoidFactor
-		bat.vy += seperation.vy * avoidFactor
+		bat.vx += seperation.dx * avoidFactor
+		bat.vy += seperation.dy * avoidFactor
 	}
 	if(inRange.length > 0){
 		let alignment = calculateAlignment(bat, inRange)
@@ -174,7 +174,7 @@ function pointAndShoot() {
 	bat.element.animate(
 		[
 			{ "--bat-x": bat.x, "--bat-y": bat.y, "--bat-direction": batDirection },
-			{ "--bat-x": (bat.x + bat.vx), "--bat-y": (bat.x + bat.vy), "--bat-direction": batDirection },
+			{ "--bat-x": (bat.x + bat.vx), "--bat-y": (bat.y + bat.vy), "--bat-direction": batDirection },
 		],
 		{
 			delay: bat.nextFly - now,
