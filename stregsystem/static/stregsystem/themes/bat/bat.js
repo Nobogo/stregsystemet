@@ -110,7 +110,7 @@ function pointAndShoot() {
 	// On first load, we need to get the bat position from the HTML
 	bat.x ??= Number(bat.element.style.getPropertyValue("--bat-x"));
 	bat.y ??= Number(bat.element.style.getPropertyValue("--bat-y"));
-
+	/*
 	// Calculate new coordinates
 	const { coordinate: newX, direction } = newCoordinate(bat.x);
 	const { coordinate: newY } = newCoordinate(bat.y);
@@ -141,6 +141,7 @@ function pointAndShoot() {
 	bat.nextFly += flyTime;
 	bat.x = newX;
 	bat.y = newY;
+	*/
 
 	// Put it back in the bats array.
 	// Bats must be ordered such that the first element is always the next one that needs to be shot.
@@ -154,6 +155,48 @@ function pointAndShoot() {
 
 	// Move on to the next bat in need
 	prepareNextShot();
+}
+
+/**
+ * Generates a list of bats that are close to the bat
+ * @param {bat} bat The bat we want to check from
+ * @param {bat[]} others The array of other bats
+ * @param {number} distance The radius around the bat
+ */
+function isClose(bat, others, distance){
+
+}
+
+/**
+ *
+ * @param {bat} bat
+ * @param {bat[]} others
+ */
+function calculateSeperation(bat, others){
+	let sepDx = 0
+	let sepDy = 0
+	others.forEach(other=> {sepDx += bat.x - other.x;
+		                         sepDy += bat.y - other.y})
+	return {'dx': sepDx, 'dy':sepDy}
+}
+
+function calculateAlignment(bat, others){
+	let averageVelx = 0
+	let averageVely = 0
+	others.forEach(other=>{averageVelx += other.vx;
+		                   averageVely += other.vy})
+	averageVelx = averageVelx/others.length
+	averageVely = averageVely/others.length
+	return {'vx': averageVelx, 'vy': averageVely}
+}
+function calculateCohesion(bat, others){
+	let averagex = 0
+	let averagey = 0
+	others.forEach(other=>{averagex += other.x;
+		                   averagey += other.y})
+	averagex = averagex/others.length
+	averagey = averagey/others.length
+	return {'vx': averagex, 'vy': averagey}
 }
 
 /**
